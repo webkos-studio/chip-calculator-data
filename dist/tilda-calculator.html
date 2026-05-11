@@ -51,7 +51,7 @@
     content: ''; width: 8px; height: 8px; border-radius: 50%;
     background: var(--accent); box-shadow: 0 0 16px rgba(223,91,67,.65);
   }
-  #chip-calc-widget h2 { margin: 0; font-size: clamp(30px, 4vw, 44px); line-height: 1.02; max-width: 10ch; }
+  #chip-calc-widget h2 { margin: 0; font-size: clamp(30px, 4vw, 44px); line-height: 1.02; max-width: none; }
   #chip-calc-widget .cc-subtitle { margin: 0; max-width: 760px; color: var(--muted); font-size: 15px; line-height: 1.6; }
   #chip-calc-widget .cc-meta { display: flex; flex-wrap: wrap; gap: 10px; }
   #chip-calc-widget .cc-meta span {
@@ -113,6 +113,7 @@
     background: rgba(255,255,255,.03);
   }
   #chip-calc-widget td { font-size: 14px; }
+  #chip-calc-widget tbody td:last-child { color: var(--good); font-weight: 700; }
   #chip-calc-widget tr:last-child td { border-bottom: none; }
   #chip-calc-widget .cc-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 16px; }
   #chip-calc-widget .cc-button {
@@ -127,6 +128,7 @@
   @media (max-width: 980px) { #chip-calc-widget .cc-filters { grid-template-columns: repeat(2, minmax(0,1fr)); } }
   @media (max-width: 640px) {
     #chip-calc-widget { padding: 20px; border-radius: 24px; }
+    #chip-calc-widget h2 { max-width: 10ch; }
     #chip-calc-widget .cc-filters { grid-template-columns: 1fr; }
     #chip-calc-widget .cc-button { width: 100%; }
     #chip-calc-widget .cc-table-wrap { overflow: visible; background: transparent; border: none; }
@@ -169,7 +171,6 @@
       <div class="cc-meta">
         <span id="chip-calc-widget-meta-brands">— брендов</span>
         <span id="chip-calc-widget-meta-records">— модификаций</span>
-        <span id="chip-calc-widget-meta-date">Обновлено: —</span>
       </div>
     </div>
 
@@ -185,7 +186,6 @@
       <div class="cc-result" id="chip-calc-widget-result">
         <div>
           <div class="cc-badges">
-            <div class="cc-badge cc-badge--source" id="chip-calc-widget-source"></div>
             <div class="cc-badge" id="chip-calc-widget-path"></div>
           </div>
           <h3 class="cc-title" id="chip-calc-widget-title"></h3>
@@ -201,7 +201,6 @@
         <div class="cc-footer">
           <button class="cc-button" id="chip-calc-widget-lead-button" type="button">Оставить заявку</button>
         </div>
-        <div class="cc-note">Для части карточек Rechip год выпуска не вынесен в отдельный уровень каталога, поэтому в фильтре используется значение «Без разбивки».</div>
       </div>
     </div>
   </div>
@@ -224,13 +223,11 @@
       panel: document.getElementById(`${widgetId}-panel`),
       empty: document.getElementById(`${widgetId}-empty`),
       title: document.getElementById(`${widgetId}-title`),
-      source: document.getElementById(`${widgetId}-source`),
       path: document.getElementById(`${widgetId}-path`),
       rows: document.getElementById(`${widgetId}-rows`),
       leadButton: document.getElementById(`${widgetId}-lead-button`),
       metaBrands: document.getElementById(`${widgetId}-meta-brands`),
       metaRecords: document.getElementById(`${widgetId}-meta-records`),
-      metaDate: document.getElementById(`${widgetId}-meta-date`),
     };
 
     if (!payload || !payload.meta || !Array.isArray(payload.grouped)) {
@@ -244,7 +241,6 @@
 
     els.metaBrands.textContent = String(payload.meta.brands) + ' брендов';
     els.metaRecords.textContent = String(payload.meta.totalRecords) + ' модификаций';
-    els.metaDate.textContent = 'Обновлено: ' + formatDate(payload.meta.generatedAt);
     els.brand.disabled = false;
 
     const fillSelect = (select, items, placeholder, mapper) => {
@@ -402,7 +398,6 @@
       const stageRows = pickStageRows(engine.rows);
       els.panel.dataset.state = 'ready';
       els.title.textContent = engine.title;
-      els.source.textContent = sourceName(engine.source);
       els.path.textContent = [state.brand, state.model, state.year, engine.name].join(' / ');
       els.rows.innerHTML = '';
       stageRows.forEach((row) => {
@@ -463,13 +458,5 @@
     renderYears();
     renderEngines();
     renderResult();
-
-    function formatDate(isoString) {
-      return new Intl.DateTimeFormat('ru-RU', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-      }).format(new Date(isoString));
-    }
   })();
 </script>
