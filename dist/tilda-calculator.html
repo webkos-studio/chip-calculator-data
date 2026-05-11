@@ -1,0 +1,305 @@
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+
+  #chip-calc-widget {
+    --bg: #101418;
+    --panel: #171d22;
+    --line: rgba(255,255,255,.08);
+    --text: #f3f6f8;
+    --muted: #a7afb7;
+    --accent: #df5b43;
+    --accent-soft: rgba(223,91,67,.14);
+    --good: #78d5a9;
+    font-family: 'Manrope', 'Segoe UI', sans-serif;
+    color: var(--text);
+    background:
+      radial-gradient(circle at top left, rgba(223,91,67,.18), transparent 28%),
+      linear-gradient(135deg, #0b0f12 0%, #12181d 52%, #171e24 100%);
+    border-radius: 28px;
+    padding: 28px;
+    box-shadow: 0 24px 80px rgba(0,0,0,.28);
+  }
+  #chip-calc-widget, #chip-calc-widget * { box-sizing: border-box; }
+  #chip-calc-widget .cc-shell { display: grid; gap: 22px; }
+  #chip-calc-widget .cc-kicker {
+    display: inline-flex; align-items: center; gap: 8px; width: fit-content;
+    padding: 8px 12px; border-radius: 999px; background: rgba(255,255,255,.05);
+    color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .08em;
+  }
+  #chip-calc-widget .cc-kicker::before {
+    content: ''; width: 8px; height: 8px; border-radius: 50%;
+    background: var(--accent); box-shadow: 0 0 16px rgba(223,91,67,.65);
+  }
+  #chip-calc-widget h2 { margin: 0; font-size: clamp(30px, 4vw, 44px); line-height: 1.02; max-width: 10ch; }
+  #chip-calc-widget .cc-subtitle { margin: 0; max-width: 760px; color: var(--muted); font-size: 15px; line-height: 1.6; }
+  #chip-calc-widget .cc-meta { display: flex; flex-wrap: wrap; gap: 10px; }
+  #chip-calc-widget .cc-meta span {
+    padding: 8px 12px; border-radius: 999px; background: rgba(255,255,255,.04);
+    border: 1px solid rgba(255,255,255,.06); color: var(--muted); font-size: 13px;
+  }
+  #chip-calc-widget .cc-filters { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; }
+  #chip-calc-widget label { display: grid; gap: 8px; }
+  #chip-calc-widget label span:first-child { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; }
+  #chip-calc-widget .cc-select-wrap { position: relative; }
+  #chip-calc-widget .cc-select-wrap::after {
+    content: '▾'; position: absolute; right: 16px; top: 50%; transform: translateY(-50%);
+    color: var(--muted); pointer-events: none;
+  }
+  #chip-calc-widget select {
+    width: 100%; appearance: none; border: 1px solid var(--line); border-radius: 18px;
+    background: rgba(9,12,15,.8); color: var(--text); padding: 16px 42px 16px 16px;
+    font: inherit; font-size: 15px;
+  }
+  #chip-calc-widget select:focus { outline: none; border-color: rgba(223,91,67,.8); }
+  #chip-calc-widget select:disabled { opacity: .55; cursor: not-allowed; }
+  #chip-calc-widget .cc-panel {
+    min-height: 320px; padding: 22px; border-radius: 24px; background: var(--panel);
+    border: 1px solid rgba(255,255,255,.06); display: grid; gap: 18px;
+  }
+  #chip-calc-widget .cc-empty {
+    min-height: 250px; display: grid; place-items: center; text-align: center; padding: 24px;
+    color: var(--muted); border-radius: 20px; border: 1px dashed rgba(255,255,255,.12);
+    background: rgba(255,255,255,.02);
+  }
+  #chip-calc-widget .cc-result { display: none; gap: 18px; animation: ccFade .3s ease; }
+  #chip-calc-widget .cc-panel[data-state="ready"] .cc-empty { display: none; }
+  #chip-calc-widget .cc-panel[data-state="ready"] .cc-result { display: grid; }
+  #chip-calc-widget .cc-badges { display: flex; flex-wrap: wrap; gap: 8px; }
+  #chip-calc-widget .cc-badge {
+    display: inline-flex; align-items: center; gap: 8px; width: fit-content;
+    padding: 8px 12px; border-radius: 999px; background: rgba(255,255,255,.05);
+    color: var(--muted); font-size: 12px;
+  }
+  #chip-calc-widget .cc-badge--source { background: var(--accent-soft); color: #ffd3cb; }
+  #chip-calc-widget .cc-title { margin: 0; font-size: clamp(22px, 3vw, 34px); line-height: 1.1; }
+  #chip-calc-widget .cc-table-wrap {
+    overflow-x: auto; border-radius: 20px; border: 1px solid rgba(255,255,255,.06);
+    background: rgba(8,10,12,.45);
+  }
+  #chip-calc-widget table { width: 100%; border-collapse: collapse; min-width: 640px; }
+  #chip-calc-widget th, #chip-calc-widget td { padding: 16px 18px; text-align: left; border-bottom: 1px solid var(--line); }
+  #chip-calc-widget th {
+    color: var(--muted); font-size: 12px; letter-spacing: .08em; text-transform: uppercase;
+    background: rgba(255,255,255,.03);
+  }
+  #chip-calc-widget td { font-size: 14px; }
+  #chip-calc-widget td:last-child { color: var(--good); font-weight: 700; }
+  #chip-calc-widget tr:last-child td { border-bottom: none; }
+  #chip-calc-widget .cc-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; }
+  #chip-calc-widget .cc-price small {
+    display: block; margin-bottom: 6px; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .08em;
+  }
+  #chip-calc-widget .cc-price strong { font-size: clamp(24px, 3vw, 38px); line-height: 1; }
+  #chip-calc-widget .cc-button {
+    display: inline-flex; align-items: center; justify-content: center; min-width: 180px;
+    padding: 14px 18px; border-radius: 16px; text-decoration: none; font-weight: 700;
+    background: var(--accent); color: #fff;
+  }
+  #chip-calc-widget .cc-note { color: var(--muted); font-size: 12px; line-height: 1.6; }
+  @keyframes ccFade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+  @media (max-width: 980px) { #chip-calc-widget .cc-filters { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+  @media (max-width: 640px) {
+    #chip-calc-widget { padding: 20px; border-radius: 24px; }
+    #chip-calc-widget .cc-filters { grid-template-columns: 1fr; }
+    #chip-calc-widget .cc-button { width: 100%; }
+  }
+</style>
+
+<div id="chip-calc-widget">
+  <div class="cc-shell">
+    <div>
+      <div class="cc-kicker">Stage 1 Table</div>
+      <h2>Калькулятор чип-тюнинга</h2>
+      <p class="cc-subtitle">Объединённая база из Asiaforce, Seven Force и Rechip. Выберите марку, модель, год и мотор — ниже появится единая таблица Stage 1 и стоимость.</p>
+      <div class="cc-meta">
+        <span id="chip-calc-widget-meta-brands">— брендов</span>
+        <span id="chip-calc-widget-meta-records">— модификаций</span>
+        <span id="chip-calc-widget-meta-date">Обновлено: —</span>
+      </div>
+    </div>
+
+    <div class="cc-filters">
+      <label><span>Марка</span><span class="cc-select-wrap"><select id="chip-calc-widget-brand" disabled><option value="">Загрузка...</option></select></span></label>
+      <label><span>Модель</span><span class="cc-select-wrap"><select id="chip-calc-widget-model" disabled><option value="">Выберите модель</option></select></span></label>
+      <label><span>Год</span><span class="cc-select-wrap"><select id="chip-calc-widget-year" disabled><option value="">Выберите год</option></select></span></label>
+      <label><span>Мотор</span><span class="cc-select-wrap"><select id="chip-calc-widget-engine" disabled><option value="">Выберите мотор</option></select></span></label>
+    </div>
+
+    <div class="cc-panel" id="chip-calc-widget-panel" data-state="hidden">
+      <div class="cc-empty" id="chip-calc-widget-empty">Загрузка базы данных калькулятора...</div>
+      <div class="cc-result" id="chip-calc-widget-result">
+        <div>
+          <div class="cc-badges">
+            <div class="cc-badge cc-badge--source" id="chip-calc-widget-source"></div>
+            <div class="cc-badge" id="chip-calc-widget-path"></div>
+          </div>
+          <h3 class="cc-title" id="chip-calc-widget-title"></h3>
+        </div>
+        <div class="cc-table-wrap">
+          <table>
+            <thead>
+              <tr><th>Параметр</th><th>Заводские</th><th>После тюнинга</th><th>Разница</th></tr>
+            </thead>
+            <tbody id="chip-calc-widget-rows"></tbody>
+          </table>
+        </div>
+        <div class="cc-footer">
+          <div class="cc-price"><small>Стоимость Stage 1</small><strong id="chip-calc-widget-price">По запросу</strong></div>
+          <a class="cc-button" id="chip-calc-widget-source-link" href="#" target="_blank" rel="nofollow noopener">Открыть источник</a>
+        </div>
+        <div class="cc-note">Для части карточек Rechip год выпуска не вынесен в отдельный уровень каталога, поэтому в фильтре используется значение «Без разбивки».</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>window.__CHIP_CALC_DATA__ = window.__CHIP_CALC_DATA__ || null;</script>
+
+<script src="https://example.com/chip-calculator-data.js"></script>
+
+<script>
+  (() => {
+    const payload = window.__CHIP_CALC_DATA__;
+    const widgetId = "chip-calc-widget";
+    const els = {
+      brand: document.getElementById(`${widgetId}-brand`),
+      model: document.getElementById(`${widgetId}-model`),
+      year: document.getElementById(`${widgetId}-year`),
+      engine: document.getElementById(`${widgetId}-engine`),
+      panel: document.getElementById(`${widgetId}-panel`),
+      empty: document.getElementById(`${widgetId}-empty`),
+      title: document.getElementById(`${widgetId}-title`),
+      source: document.getElementById(`${widgetId}-source`),
+      path: document.getElementById(`${widgetId}-path`),
+      rows: document.getElementById(`${widgetId}-rows`),
+      price: document.getElementById(`${widgetId}-price`),
+      sourceLink: document.getElementById(`${widgetId}-source-link`),
+      metaBrands: document.getElementById(`${widgetId}-meta-brands`),
+      metaRecords: document.getElementById(`${widgetId}-meta-records`),
+      metaDate: document.getElementById(`${widgetId}-meta-date`),
+    };
+
+    if (!payload || !payload.meta || !Array.isArray(payload.grouped)) {
+      els.empty.textContent = 'Не удалось загрузить базу данных калькулятора. Проверьте подключение файла с данными.';
+      return;
+    }
+
+    const data = payload.grouped;
+    const state = { brand: '', model: '', year: '', engine: '' };
+
+    els.metaBrands.textContent = String(payload.meta.brands) + ' брендов';
+    els.metaRecords.textContent = String(payload.meta.totalRecords) + ' модификаций';
+    els.metaDate.textContent = 'Обновлено: ' + formatDate(payload.meta.generatedAt);
+    els.empty.textContent = 'Выберите параметры автомобиля, чтобы показать таблицу Stage 1, стоимость и ссылку на исходную карточку.';
+    els.brand.disabled = false;
+
+    const fillSelect = (select, items, placeholder, mapper) => {
+      const current = select.value;
+      select.innerHTML = '';
+      const first = document.createElement('option');
+      first.value = '';
+      first.textContent = placeholder;
+      select.appendChild(first);
+      items.forEach((item) => {
+        const mapped = mapper(item);
+        const option = document.createElement('option');
+        option.value = mapped.value;
+        option.textContent = mapped.label;
+        select.appendChild(option);
+      });
+      select.value = [...select.options].some((option) => option.value === current) ? current : '';
+    };
+
+    const findBrand = () => data.find((brand) => brand.name === state.brand) || null;
+    const findModel = () => findBrand() && findBrand().models.find((model) => model.name === state.model) || null;
+    const findYear = () => findModel() && findModel().years.find((year) => year.name === state.year) || null;
+    const findEngine = () => findYear() && findYear().engines.find((engine) => engine.slug === state.engine) || null;
+
+    const renderBrands = () => fillSelect(els.brand, data, 'Выберите марку', (item) => ({ value: item.name, label: item.name }));
+    const renderModels = () => {
+      const items = findBrand() ? findBrand().models : [];
+      fillSelect(els.model, items, 'Выберите модель', (item) => ({ value: item.name, label: item.name }));
+      els.model.disabled = !items.length;
+    };
+    const renderYears = () => {
+      const items = findModel() ? findModel().years : [];
+      fillSelect(els.year, items, 'Выберите год', (item) => ({ value: item.name, label: item.name }));
+      els.year.disabled = !items.length;
+    };
+    const renderEngines = () => {
+      const items = findYear() ? findYear().engines : [];
+      fillSelect(els.engine, items, 'Выберите мотор', (item) => ({ value: item.slug, label: item.name }));
+      els.engine.disabled = !items.length;
+    };
+
+    const sourceName = (source) => source === 'asiaforce' ? 'Источник: Asiaforce' : source === 'sevenforce' ? 'Источник: Seven Force' : 'Источник: Rechip';
+    const priceName = (value) => value ? new Intl.NumberFormat('ru-RU').format(value) + ' ₽' : 'По запросу';
+    const escapeHtml = (value) => String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
+    const renderResult = () => {
+      const engine = findEngine();
+      if (!engine) {
+        els.panel.dataset.state = 'hidden';
+        return;
+      }
+      els.panel.dataset.state = 'ready';
+      els.title.textContent = engine.title;
+      els.source.textContent = sourceName(engine.source);
+      els.path.textContent = [state.brand, state.model, state.year, engine.name].join(' / ');
+      els.price.textContent = priceName(engine.price);
+      els.sourceLink.href = engine.url;
+      els.rows.innerHTML = '';
+      engine.rows.forEach((row) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = '<td>' + escapeHtml(row.label) + '</td><td>' + escapeHtml(row.stock) + '</td><td>' + escapeHtml(row.tuned) + '</td><td>' + escapeHtml(row.diff || '—') + '</td>';
+        els.rows.appendChild(tr);
+      });
+    };
+
+    els.brand.addEventListener('change', () => {
+      state.brand = els.brand.value;
+      state.model = '';
+      state.year = '';
+      state.engine = '';
+      renderModels();
+      renderYears();
+      renderEngines();
+      renderResult();
+    });
+
+    els.model.addEventListener('change', () => {
+      state.model = els.model.value;
+      state.year = '';
+      state.engine = '';
+      renderYears();
+      renderEngines();
+      renderResult();
+    });
+
+    els.year.addEventListener('change', () => {
+      state.year = els.year.value;
+      state.engine = '';
+      renderEngines();
+      renderResult();
+    });
+
+    els.engine.addEventListener('change', () => {
+      state.engine = els.engine.value;
+      renderResult();
+    });
+
+    renderBrands();
+    renderModels();
+    renderYears();
+    renderEngines();
+    renderResult();
+
+    function formatDate(isoString) {
+      return new Intl.DateTimeFormat('ru-RU', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      }).format(new Date(isoString));
+    }
+  })();
+</script>
