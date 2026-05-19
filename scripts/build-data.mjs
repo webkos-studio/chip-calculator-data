@@ -89,7 +89,6 @@ const RECHIP_INCLUDED = new Set(
   [
     'Chevrolet',
     'Citroen',
-    'Fiat',
     'Ford',
     'Honda',
     'Hyundai',
@@ -108,6 +107,28 @@ const RECHIP_INCLUDED = new Set(
     'Volkswagen',
   ].map(normalizeName),
 );
+
+const CITY_TRIM_PATTERN = /(челябинск|челяба|Р§РµР»СЏР±РёРЅСЃРє|Р§РµР»СЏР±Р°)/giu;
+
+const RECHIP_RECORD_OVERRIDES = new Map([
+  ['https://m.rechip.ru/c/Chevrolet/139/345', { rows: { power: { stock: '405 л.с.', tuned: '425 л.с.' } } }],
+  ['https://m.rechip.ru/c/Chevrolet/139/346', { rows: { power: { stock: '432 л.с.', tuned: '450 л.с.' } } }],
+  ['https://m.rechip.ru/c/Ford/501/3691', { rows: { power: { stock: '68 л.с.', tuned: '93 л.с.' }, torque: { stock: '160 Нм', tuned: '210 Нм' } } }],
+  ['https://m.rechip.ru/c/Ford/116/1607', { rows: { power: { stock: '109 л.с.', tuned: '136 л.с.' } } }],
+  ['https://m.rechip.ru/c/Kia/150/6294', { rows: { power: { stock: '136 л.с.', tuned: '176 л.с.' }, torque: { stock: '280 Нм', tuned: '360 Нм' } } }],
+  ['https://m.rechip.ru/c/Kia/623/6610', { engine: 'Kia Seltos 1.6 CRDI 136 л.с. / 280 Нм', title: 'Чип тюнинг Kia Seltos 1.6 CRDI 136 л.с. / 280 Нм STAGE 1', rows: { power: { stock: '136 л.с.', tuned: '176 л.с.' }, torque: { stock: '280 Нм', tuned: '360 Нм' } } }],
+  ['https://m.rechip.ru/c/Kia/154/6573', { engine: 'Kia Sportage 1.6 CRDI 136 л.с. / 280 Нм', title: 'Чип тюнинг Kia Sportage 1.6 CRDI 136 л.с. / 280 Нм STAGE 1', rows: { power: { stock: '136 л.с.', tuned: '176 л.с.' }, torque: { stock: '280 Нм', tuned: '360 Нм' } } }],
+  ['https://m.rechip.ru/c/Hyundai/683/6050', { engine: 'Hyundai Kona 1.6 CRDI 136 л.с. / 280 Нм', title: 'Чип тюнинг Hyundai Kona 1.6 CRDI 136 л.с. / 280 Нм STAGE 1', rows: { power: { stock: '136 л.с.', tuned: '176 л.с.' }, torque: { stock: '280 Нм', tuned: '360 Нм' } } }],
+  ['https://m.rechip.ru/c/Citroen/101/360', { rows: { power: { stock: '156 л.с.', tuned: '185 л.с.' }, torque: { stock: '380 Нм', tuned: '430 Нм' } } }],
+  ['https://m.rechip.ru/c/Citroen/97/5815', { rows: { power: { stock: '90 л.с.', tuned: '97 л.с.' }, torque: { stock: '133 Нм', tuned: '140 Нм' } } }],
+  ['https://m.rechip.ru/c/Citroen/97/5817', { rows: { power: { stock: '90 л.с.', tuned: '110 л.с.' }, torque: { stock: '200 Нм', tuned: '260 Нм' } } }],
+  ['https://m.rechip.ru/c/Citroen/97/5814', { rows: { power: { stock: '109 л.с.', tuned: '120 л.с.' }, torque: { stock: '147 Нм', tuned: '160 Нм' } } }],
+  ['https://m.rechip.ru/c/Citroen/548/3980', { rows: { power: { stock: '120 л.с.', tuned: '150 л.с.' }, torque: { stock: '320 Нм', tuned: '370 Нм' } } }],
+  ['https://m.rechip.ru/c/Citroen/548/3981', { rows: { power: { stock: '130 л.с.', tuned: '160 л.с.' }, torque: { stock: '320 Нм', tuned: '380 Нм' } } }],
+  ['https://m.rechip.ru/c/Citroen/610/5390', { rows: { power: { stock: '68 л.с.', tuned: '90 л.с.' }, torque: { stock: '160 Нм', tuned: '200 Нм' } } }],
+]);
+
+const RECHIP_FORCE_INCLUDE = new Set(RECHIP_RECORD_OVERRIDES.keys());
 
 const fetchCache = new Map();
 const hostRuntime = new Map();
@@ -513,7 +534,7 @@ function buildRecord({ source, url, brandName, modelName, yearName, engineName, 
     }))
     .filter((row) => row.label && (row.stock || row.tuned));
 
-  return {
+  return applyRecordFixes({
     source,
     url,
     brand: brandName,
@@ -524,7 +545,7 @@ function buildRecord({ source, url, brandName, modelName, yearName, engineName, 
     price: price ?? null,
     rows: normalizedRows,
     slug: normalizeName([brandName, modelName, yearName, engineName].join(' ')),
-  };
+  });
 }
 
 function parseRechipRows(html) {
@@ -566,6 +587,94 @@ function buildDiff(label, stock, tuned) {
   return isAcceleration ? `-${formattedValue} ${unit}` : `${sign} ${formattedValue} ${unit}`.trim();
 }
 
+function applyRecordFixes(record) {
+  if (!record) {
+    return record;
+  }
+
+  const nextRecord = {
+    ...record,
+    brand: sanitizeRecordText(record.brand),
+    model: sanitizeRecordText(record.model),
+    year: sanitizeRecordText(record.year),
+    engine: sanitizeRecordText(record.engine),
+    title: sanitizeRecordText(record.title),
+    rows: (record.rows ?? []).map((row) => ({
+      ...row,
+      label: sanitizeRecordText(row.label),
+      stock: sanitizeRecordText(row.stock),
+      tuned: sanitizeRecordText(row.tuned),
+      diff: sanitizeRecordText(row.diff),
+    })),
+  };
+
+  if (nextRecord.source === 'rechip') {
+    applyRechipOverride(nextRecord);
+  }
+
+  nextRecord.slug = normalizeName(
+    [nextRecord.brand, nextRecord.model, nextRecord.year, nextRecord.engine].join(' '),
+  );
+
+  return nextRecord;
+}
+
+function applyRechipOverride(record) {
+  const override = RECHIP_RECORD_OVERRIDES.get(record.url);
+  if (!override) {
+    return;
+  }
+
+  if (override.brand) {
+    record.brand = override.brand;
+  }
+  if (override.model) {
+    record.model = override.model;
+  }
+  if (override.year) {
+    record.year = override.year;
+  }
+  if (override.engine) {
+    record.engine = override.engine;
+  }
+  if (override.title) {
+    record.title = override.title;
+  }
+  if (override.rows?.power && record.rows[0]) {
+    record.rows[0] = overrideRowValues(
+      record.rows[0],
+      override.rows.power.stock,
+      override.rows.power.tuned,
+    );
+  }
+  if (override.rows?.torque && record.rows[1]) {
+    record.rows[1] = overrideRowValues(
+      record.rows[1],
+      override.rows.torque.stock,
+      override.rows.torque.tuned,
+    );
+  }
+}
+
+function overrideRowValues(row, stock, tuned) {
+  const nextRow = {
+    ...row,
+    stock: sanitizeRecordText(stock),
+    tuned: sanitizeRecordText(tuned),
+  };
+  nextRow.diff = buildDiff(nextRow.label, nextRow.stock, nextRow.tuned);
+  return nextRow;
+}
+
+function sanitizeRecordText(value) {
+  return cleanText(value)
+    .replace(CITY_TRIM_PATTERN, ' ')
+    .replace(/\s*\/\s*/g, ' / ')
+    .replace(/\s+/g, ' ')
+    .replace(/\s+([,.:;!?/])/g, '$1')
+    .trim();
+}
+
 function parseFourColumnRows(input, pattern) {
   const rows = [];
   for (const match of input.matchAll(pattern)) {
@@ -602,6 +711,7 @@ async function finalizeBuild(selectedSources) {
   }
 
   const records = dedupeByUrl(sourceRecords)
+    .map((record) => applyRecordFixes(record))
     .filter((record) => isAllowedRecord(record))
     .sort(compareRecords);
   const grouped = groupRecords(records);
@@ -684,7 +794,7 @@ function isAllowedRecord(record) {
   if (record.source === 'rechip') {
     return (
       RECHIP_INCLUDED.has(normalizeName(record.brand)) &&
-      isRechipStage1Record(record)
+      (isRechipStage1Record(record) || RECHIP_FORCE_INCLUDE.has(record.url))
     );
   }
 
