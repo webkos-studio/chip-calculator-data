@@ -1,5 +1,12 @@
-<meta charset="utf-8">
+﻿import { readFile, writeFile } from 'node:fs/promises';
 
+const payload = JSON.parse(await readFile('data/calculator-data.json', 'utf8'));
+const widgetId = 'chip-calc-widget';
+const dataVersion = String(payload?.meta?.generatedAt ?? Date.now()).replace(/[^\d]/g, '');
+const dataScriptPlaceholder =
+  `https://cdn.jsdelivr.net/gh/webkos-studio/chip-calculator-data@main/dist/tilda-calculator-data.js?v=${dataVersion}`;
+
+const styleBlock = `
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
 
@@ -21,7 +28,7 @@
     opacity: .72;
   }
 
-  #chip-calc-widget {
+  #${widgetId} {
     --bg: #101418;
     --panel: #171d22;
     --line: rgba(255,255,255,.08);
@@ -39,110 +46,110 @@
     padding: 28px;
     box-shadow: 0 24px 80px rgba(0,0,0,.28);
   }
-  #chip-calc-widget, #chip-calc-widget * { box-sizing: border-box; }
-  #chip-calc-widget .cc-shell { display: grid; gap: 22px; }
-  #chip-calc-widget .cc-hero { display: grid; gap: 20px; }
-  #chip-calc-widget .cc-kicker {
+  #${widgetId}, #${widgetId} * { box-sizing: border-box; }
+  #${widgetId} .cc-shell { display: grid; gap: 22px; }
+  #${widgetId} .cc-hero { display: grid; gap: 20px; }
+  #${widgetId} .cc-kicker {
     display: inline-flex; align-items: center; gap: 8px; width: fit-content;
     padding: 8px 12px; border-radius: 999px; background: rgba(255,255,255,.05);
     color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .08em;
   }
-  #chip-calc-widget .cc-kicker::before {
+  #${widgetId} .cc-kicker::before {
     content: ''; width: 8px; height: 8px; border-radius: 50%;
     background: var(--accent); box-shadow: 0 0 16px rgba(223,91,67,.65);
   }
-  #chip-calc-widget h2 { margin: 0; font-size: clamp(30px, 4vw, 44px); line-height: 1.02; max-width: none; }
-  #chip-calc-widget .cc-subtitle { margin: 0; max-width: 760px; color: var(--muted); font-size: 15px; line-height: 1.6; }
-  #chip-calc-widget .cc-meta { display: flex; flex-wrap: wrap; gap: 10px; }
-  #chip-calc-widget .cc-meta span {
+  #${widgetId} h2 { margin: 0; font-size: clamp(30px, 4vw, 44px); line-height: 1.02; max-width: none; }
+  #${widgetId} .cc-subtitle { margin: 0; max-width: 760px; color: var(--muted); font-size: 15px; line-height: 1.6; }
+  #${widgetId} .cc-meta { display: flex; flex-wrap: wrap; gap: 10px; }
+  #${widgetId} .cc-meta span {
     padding: 8px 12px; border-radius: 999px; background: rgba(255,255,255,.04);
     border: 1px solid rgba(255,255,255,.06); color: var(--muted); font-size: 13px;
   }
-  #chip-calc-widget .cc-filters { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; }
-  #chip-calc-widget label { display: grid; gap: 8px; }
-  #chip-calc-widget label span:first-child { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; }
-  #chip-calc-widget .cc-select-wrap { position: relative; }
-  #chip-calc-widget .cc-select-wrap::after {
+  #${widgetId} .cc-filters { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; }
+  #${widgetId} label { display: grid; gap: 8px; }
+  #${widgetId} label span:first-child { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; }
+  #${widgetId} .cc-select-wrap { position: relative; }
+  #${widgetId} .cc-select-wrap::after {
     content: 'в–ѕ'; position: absolute; right: 16px; top: 50%; transform: translateY(-50%);
     color: var(--muted); pointer-events: none;
   }
-  #chip-calc-widget select {
+  #${widgetId} select {
     width: 100%; appearance: none; border: 1px solid var(--line); border-radius: 18px;
     background: rgba(9,12,15,.8); color: var(--text); padding: 16px 42px 16px 16px;
     font: inherit; font-size: 15px;
   }
-  #chip-calc-widget select:focus { outline: none; border-color: rgba(223,91,67,.8); }
-  #chip-calc-widget select:disabled { opacity: .55; cursor: not-allowed; }
-  #chip-calc-widget .cc-panel {
+  #${widgetId} select:focus { outline: none; border-color: rgba(223,91,67,.8); }
+  #${widgetId} select:disabled { opacity: .55; cursor: not-allowed; }
+  #${widgetId} .cc-panel {
     display: none;
     min-height: 320px; padding: 22px; border-radius: 24px; background: var(--panel);
     border: 1px solid rgba(255,255,255,.06); gap: 18px;
   }
-  #chip-calc-widget .cc-empty {
+  #${widgetId} .cc-empty {
     min-height: 250px; display: grid; place-items: center; text-align: center; padding: 24px;
     color: var(--muted); border-radius: 20px; border: 1px dashed rgba(255,255,255,.12);
     background: rgba(255,255,255,.02);
   }
-  #chip-calc-widget .cc-result { display: none; gap: 18px; animation: ccFade .3s ease; }
-  #chip-calc-widget .cc-panel[data-state="error"] {
+  #${widgetId} .cc-result { display: none; gap: 18px; animation: ccFade .3s ease; }
+  #${widgetId} .cc-panel[data-state="error"] {
     display: grid;
     animation: ccReveal .35s ease;
   }
-  #chip-calc-widget .cc-panel[data-state="ready"] {
+  #${widgetId} .cc-panel[data-state="ready"] {
     display: grid;
     animation: ccReveal .35s ease;
   }
-  #chip-calc-widget .cc-panel[data-state="ready"] .cc-empty { display: none; }
-  #chip-calc-widget .cc-panel[data-state="ready"] .cc-result { display: grid; }
-  #chip-calc-widget .cc-badges { display: flex; flex-wrap: wrap; gap: 8px; }
-  #chip-calc-widget .cc-badge {
+  #${widgetId} .cc-panel[data-state="ready"] .cc-empty { display: none; }
+  #${widgetId} .cc-panel[data-state="ready"] .cc-result { display: grid; }
+  #${widgetId} .cc-badges { display: flex; flex-wrap: wrap; gap: 8px; }
+  #${widgetId} .cc-badge {
     display: inline-flex; align-items: center; gap: 8px; width: fit-content;
     padding: 8px 12px; border-radius: 999px; background: rgba(255,255,255,.05);
     color: var(--muted); font-size: 12px;
   }
-  #chip-calc-widget .cc-badge--source { background: var(--accent-soft); color: #ffd3cb; }
-  #chip-calc-widget .cc-title { margin: 0; font-size: clamp(22px, 3vw, 34px); line-height: 1.1; }
-  #chip-calc-widget .cc-table-wrap {
+  #${widgetId} .cc-badge--source { background: var(--accent-soft); color: #ffd3cb; }
+  #${widgetId} .cc-title { margin: 0; font-size: clamp(22px, 3vw, 34px); line-height: 1.1; }
+  #${widgetId} .cc-table-wrap {
     overflow-x: auto; border-radius: 20px; border: 1px solid rgba(255,255,255,.06);
     background: rgba(8,10,12,.45);
   }
-  #chip-calc-widget table { width: 100%; border-collapse: collapse; min-width: 640px; }
-  #chip-calc-widget th, #chip-calc-widget td { padding: 16px 18px; text-align: left; border-bottom: 1px solid var(--line); }
-  #chip-calc-widget th {
+  #${widgetId} table { width: 100%; border-collapse: collapse; min-width: 640px; }
+  #${widgetId} th, #${widgetId} td { padding: 16px 18px; text-align: left; border-bottom: 1px solid var(--line); }
+  #${widgetId} th {
     color: var(--muted); font-size: 12px; letter-spacing: .08em; text-transform: uppercase;
     background: rgba(255,255,255,.03);
   }
-  #chip-calc-widget td { font-size: 14px; }
-  #chip-calc-widget tbody td:last-child { color: var(--good); font-weight: 700; }
-  #chip-calc-widget tr:last-child td { border-bottom: none; }
-  #chip-calc-widget .cc-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 16px; }
-  #chip-calc-widget .cc-disclaimer {
+  #${widgetId} td { font-size: 14px; }
+  #${widgetId} tbody td:last-child { color: var(--good); font-weight: 700; }
+  #${widgetId} tr:last-child td { border-bottom: none; }
+  #${widgetId} .cc-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 16px; }
+  #${widgetId} .cc-disclaimer {
     margin-right: auto;
     max-width: 760px;
     color: rgba(167,175,183,.78);
     font-size: 10px;
     line-height: 1.5;
   }
-  #chip-calc-widget .cc-button {
+  #${widgetId} .cc-button {
     display: inline-flex; align-items: center; justify-content: center; min-width: 180px;
     padding: 14px 18px; border-radius: 16px; text-decoration: none; font-weight: 700;
     background: var(--accent); color: #fff;
     border: none; cursor: pointer;
   }
-  #chip-calc-widget .cc-note { color: var(--muted); font-size: 12px; line-height: 1.6; }
+  #${widgetId} .cc-note { color: var(--muted); font-size: 12px; line-height: 1.6; }
   @keyframes ccFade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes ccReveal { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
-  @media (max-width: 980px) { #chip-calc-widget .cc-filters { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+  @media (max-width: 980px) { #${widgetId} .cc-filters { grid-template-columns: repeat(2, minmax(0,1fr)); } }
   @media (max-width: 640px) {
-    #chip-calc-widget { padding: 20px; border-radius: 24px; }
-    #chip-calc-widget h2 { max-width: 10ch; }
-    #chip-calc-widget .cc-filters { grid-template-columns: 1fr; }
-    #chip-calc-widget .cc-button { width: 100%; }
-    #chip-calc-widget .cc-table-wrap { overflow: visible; background: transparent; border: none; }
-    #chip-calc-widget table { min-width: 0; }
-    #chip-calc-widget thead { display: none; }
-    #chip-calc-widget tbody { display: grid; gap: 12px; }
-    #chip-calc-widget tr {
+    #${widgetId} { padding: 20px; border-radius: 24px; }
+    #${widgetId} h2 { max-width: 10ch; }
+    #${widgetId} .cc-filters { grid-template-columns: 1fr; }
+    #${widgetId} .cc-button { width: 100%; }
+    #${widgetId} .cc-table-wrap { overflow: visible; background: transparent; border: none; }
+    #${widgetId} table { min-width: 0; }
+    #${widgetId} thead { display: none; }
+    #${widgetId} tbody { display: grid; gap: 12px; }
+    #${widgetId} tr {
       display: grid;
       gap: 10px;
       padding: 14px 16px;
@@ -150,7 +157,7 @@
       border-radius: 18px;
       background: rgba(8,10,12,.45);
     }
-    #chip-calc-widget td {
+    #${widgetId} td {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
@@ -158,7 +165,7 @@
       padding: 0;
       border: none;
     }
-    #chip-calc-widget td::before {
+    #${widgetId} td::before {
       content: attr(data-label);
       color: var(--muted);
       font-size: 11px;
@@ -168,74 +175,75 @@
     }
   }
 </style>
+`.trim();
 
-<div id="chip-calc-widget">
+const markupBlock = `
+<div id="${widgetId}">
   <div class="cc-shell">
     <div class="cc-hero">
       <div class="cc-kicker">Stage 1 Table</div>
       <h2>РљР°Р»СЊРєСѓР»СЏС‚РѕСЂ С‡РёРї-С‚СЋРЅРёРЅРіР°</h2>
       <p class="cc-subtitle">РћР±СЉРµРґРёРЅС‘РЅРЅР°СЏ Р±Р°Р·Р° РёР· Asiaforce, Seven Force Рё Rechip. Р’С‹Р±РµСЂРёС‚Рµ РјР°СЂРєСѓ, РјРѕРґРµР»СЊ, РіРѕРґ Рё РјРѕС‚РѕСЂ вЂ” РЅРёР¶Рµ РїРѕСЏРІРёС‚СЃСЏ РµРґРёРЅР°СЏ С‚Р°Р±Р»РёС†Р° Stage 1 Рё СЃС‚РѕРёРјРѕСЃС‚СЊ.</p>
       <div class="cc-meta">
-        <span id="chip-calc-widget-meta-brands">вЂ” Р±СЂРµРЅРґРѕРІ</span>
-        <span id="chip-calc-widget-meta-records">вЂ” РјРѕРґРёС„РёРєР°С†РёР№</span>
+        <span id="${widgetId}-meta-brands">вЂ” Р±СЂРµРЅРґРѕРІ</span>
+        <span id="${widgetId}-meta-records">вЂ” РјРѕРґРёС„РёРєР°С†РёР№</span>
       </div>
     </div>
 
     <div class="cc-filters">
-      <label><span>РњР°СЂРєР°</span><span class="cc-select-wrap"><select id="chip-calc-widget-brand" disabled><option value="">Р—Р°РіСЂСѓР·РєР°...</option></select></span></label>
-      <label><span>РњРѕРґРµР»СЊ</span><span class="cc-select-wrap"><select id="chip-calc-widget-model" disabled><option value="">Р’С‹Р±РµСЂРёС‚Рµ РјРѕРґРµР»СЊ</option></select></span></label>
-      <label><span>Р“РѕРґ</span><span class="cc-select-wrap"><select id="chip-calc-widget-year" disabled><option value="">Р’С‹Р±РµСЂРёС‚Рµ РіРѕРґ</option></select></span></label>
-      <label><span>РњРѕС‚РѕСЂ</span><span class="cc-select-wrap"><select id="chip-calc-widget-engine" disabled><option value="">Р’С‹Р±РµСЂРёС‚Рµ РјРѕС‚РѕСЂ</option></select></span></label>
+      <label><span>РњР°СЂРєР°</span><span class="cc-select-wrap"><select id="${widgetId}-brand" disabled><option value="">Р—Р°РіСЂСѓР·РєР°...</option></select></span></label>
+      <label><span>РњРѕРґРµР»СЊ</span><span class="cc-select-wrap"><select id="${widgetId}-model" disabled><option value="">Р’С‹Р±РµСЂРёС‚Рµ РјРѕРґРµР»СЊ</option></select></span></label>
+      <label><span>Р“РѕРґ</span><span class="cc-select-wrap"><select id="${widgetId}-year" disabled><option value="">Р’С‹Р±РµСЂРёС‚Рµ РіРѕРґ</option></select></span></label>
+      <label><span>РњРѕС‚РѕСЂ</span><span class="cc-select-wrap"><select id="${widgetId}-engine" disabled><option value="">Р’С‹Р±РµСЂРёС‚Рµ РјРѕС‚РѕСЂ</option></select></span></label>
     </div>
 
-    <div class="cc-panel" id="chip-calc-widget-panel" data-state="hidden">
-      <div class="cc-empty" id="chip-calc-widget-empty">Р—Р°РіСЂСѓР·РєР° Р±Р°Р·С‹ РґР°РЅРЅС‹С… РєР°Р»СЊРєСѓР»СЏС‚РѕСЂР°...</div>
-      <div class="cc-result" id="chip-calc-widget-result">
+    <div class="cc-panel" id="${widgetId}-panel" data-state="hidden">
+      <div class="cc-empty" id="${widgetId}-empty">Р—Р°РіСЂСѓР·РєР° Р±Р°Р·С‹ РґР°РЅРЅС‹С… РєР°Р»СЊРєСѓР»СЏС‚РѕСЂР°...</div>
+      <div class="cc-result" id="${widgetId}-result">
         <div>
           <div class="cc-badges">
-            <div class="cc-badge" id="chip-calc-widget-path"></div>
+            <div class="cc-badge" id="${widgetId}-path"></div>
           </div>
-          <h3 class="cc-title" id="chip-calc-widget-title"></h3>
+          <h3 class="cc-title" id="${widgetId}-title"></h3>
         </div>
         <div class="cc-table-wrap">
           <table>
             <thead>
               <tr><th>РџР°СЂР°РјРµС‚СЂ</th><th>Р‘С‹Р»Рѕ</th><th>РЎС‚Р°Р»Рѕ *</th></tr>
             </thead>
-            <tbody id="chip-calc-widget-rows"></tbody>
+            <tbody id="${widgetId}-rows"></tbody>
           </table>
         </div>
         <div class="cc-footer">
           <div class="cc-disclaimer">*Реальные результаты могут отличаться от заявленных в пределах ± 5 %. Такое отклонение обусловлено совокупным влиянием факторов: текущей температурой окружающей среды, характеристиками используемого топлива (октановое число, состав) и индивидуальным техническим состоянием конкретного автомобиля.</div>
-          <button class="cc-button" id="chip-calc-widget-lead-button" type="button">РћСЃС‚Р°РІРёС‚СЊ Р·Р°СЏРІРєСѓ</button>
+          <button class="cc-button" id="${widgetId}-lead-button" type="button">РћСЃС‚Р°РІРёС‚СЊ Р·Р°СЏРІРєСѓ</button>
         </div>
       </div>
     </div>
   </div>
 </div>
+`.trim();
 
-<script>window.__CHIP_CALC_DATA__ = window.__CHIP_CALC_DATA__ || null;</script>
-
-<script src="https://cdn.jsdelivr.net/gh/webkos-studio/chip-calculator-data@main/dist/tilda-calculator-data.js?v=20260521094015324"></script>
-
+function createBootstrap(payloadExpression) {
+  return `
 <script>
   (() => {
-    const payload = window.__CHIP_CALC_DATA__;
-    const widgetId = "chip-calc-widget";
+    const payload = ${payloadExpression};
+    const widgetId = ${JSON.stringify(widgetId)};
     const popupHook = window.__CHIP_CALC_POPUP_HOOK__ || '#chipcalc-popup';
     const els = {
-      brand: document.getElementById(`${widgetId}-brand`),
-      model: document.getElementById(`${widgetId}-model`),
-      year: document.getElementById(`${widgetId}-year`),
-      engine: document.getElementById(`${widgetId}-engine`),
-      panel: document.getElementById(`${widgetId}-panel`),
-      empty: document.getElementById(`${widgetId}-empty`),
-      title: document.getElementById(`${widgetId}-title`),
-      path: document.getElementById(`${widgetId}-path`),
-      rows: document.getElementById(`${widgetId}-rows`),
-      leadButton: document.getElementById(`${widgetId}-lead-button`),
-      metaBrands: document.getElementById(`${widgetId}-meta-brands`),
-      metaRecords: document.getElementById(`${widgetId}-meta-records`),
+      brand: document.getElementById(\`\${widgetId}-brand\`),
+      model: document.getElementById(\`\${widgetId}-model\`),
+      year: document.getElementById(\`\${widgetId}-year\`),
+      engine: document.getElementById(\`\${widgetId}-engine\`),
+      panel: document.getElementById(\`\${widgetId}-panel\`),
+      empty: document.getElementById(\`\${widgetId}-empty\`),
+      title: document.getElementById(\`\${widgetId}-title\`),
+      path: document.getElementById(\`\${widgetId}-path\`),
+      rows: document.getElementById(\`\${widgetId}-rows\`),
+      leadButton: document.getElementById(\`\${widgetId}-lead-button\`),
+      metaBrands: document.getElementById(\`\${widgetId}-meta-brands\`),
+      metaRecords: document.getElementById(\`\${widgetId}-meta-records\`),
     };
 
     if (!payload || !payload.meta || !Array.isArray(payload.grouped)) {
@@ -468,3 +476,56 @@
     renderResult();
   })();
 </script>
+  `.trim();
+}
+
+const charsetMeta = `<meta charset="utf-8">`;
+
+const inlineSnippet = [
+  charsetMeta,
+  styleBlock,
+  markupBlock,
+  createBootstrap(JSON.stringify({ meta: payload.meta, grouped: payload.grouped })),
+].join('\n\n');
+
+const loaderSnippet = [
+  charsetMeta,
+  styleBlock,
+  markupBlock,
+  `<script>window.__CHIP_CALC_DATA__ = window.__CHIP_CALC_DATA__ || null;</script>`,
+  `<script src="${dataScriptPlaceholder}"></script>`,
+  createBootstrap('window.__CHIP_CALC_DATA__'),
+].join('\n\n');
+
+const preview = `<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>РљР°Р»СЊРєСѓР»СЏС‚РѕСЂ С‡РёРї-С‚СЋРЅРёРЅРіР°</title>
+    <style>
+      body { margin: 0; min-height: 100vh; background: linear-gradient(180deg, #f1f4f6 0%, #e6eaee 100%); padding: 36px 16px; }
+      .preview-wrap { max-width: 1180px; margin: 0 auto; }
+    </style>
+  </head>
+  <body>
+    <div class="preview-wrap">${inlineSnippet}</div>
+  </body>
+</html>
+`;
+
+const dataScript = `window.__CHIP_CALC_DATA__ = ${JSON.stringify({
+  meta: payload.meta,
+  grouped: payload.grouped,
+})};\n`;
+
+await writeFile('dist/tilda-calculator-inline.html', `${inlineSnippet}\n`, 'utf8');
+await writeFile('dist/tilda-calculator.html', `${loaderSnippet}\n`, 'utf8');
+await writeFile('dist/tilda-calculator-data.js', dataScript, 'utf8');
+await writeFile(
+  'dist/tilda-calculator-data.json',
+  `${JSON.stringify({ meta: payload.meta, grouped: payload.grouped })}\n`,
+  'utf8',
+);
+await writeFile('dist/preview.html', `${preview}\n`, 'utf8');
+

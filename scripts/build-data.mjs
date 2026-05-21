@@ -587,6 +587,47 @@ function buildDiff(label, stock, tuned) {
   return isAcceleration ? `-${formattedValue} ${unit}` : `${sign} ${formattedValue} ${unit}`.trim();
 }
 
+function isPowerRowLabel(label) {
+  return /мощ/i.test(cleanText(label));
+}
+
+function isTorqueRowLabel(label) {
+  return /крут/i.test(cleanText(label));
+}
+
+function shouldAdjustStageMetricRow(label) {
+  return isPowerRowLabel(label) || isTorqueRowLabel(label);
+}
+
+function formatMetricValue(value, nextNumber) {
+  const cleaned = cleanText(value);
+  const unit = cleaned.replace(/^-?\d+(?:[.,]\d+)?\s*/u, '').trim();
+  return unit ? `${nextNumber} ${unit}` : String(nextNumber);
+}
+
+function adjustStageMetricRow(row) {
+  if (!shouldAdjustStageMetricRow(row.label)) {
+    return row;
+  }
+
+  const stockNumber = extractPrimaryNumber(row.stock);
+  const tunedNumber = extractPrimaryNumber(row.tuned);
+  if (stockNumber == null || tunedNumber == null || tunedNumber <= stockNumber) {
+    return row;
+  }
+
+  const baseDiff = tunedNumber - stockNumber;
+  const adjustedDiff = Math.max(0, Math.floor(baseDiff * 0.985) - 1);
+  const adjustedTuned = stockNumber + adjustedDiff;
+  const tuned = formatMetricValue(row.tuned, adjustedTuned);
+
+  return {
+    ...row,
+    tuned,
+    diff: buildDiff(row.label, row.stock, tuned),
+  };
+}
+
 function applyRecordFixes(record) {
   if (!record) {
     return record;
@@ -611,6 +652,8 @@ function applyRecordFixes(record) {
   if (nextRecord.source === 'rechip') {
     applyRechipOverride(nextRecord);
   }
+
+  nextRecord.rows = nextRecord.rows.map((row) => adjustStageMetricRow(row));
 
   nextRecord.slug = normalizeName(
     [nextRecord.brand, nextRecord.model, nextRecord.year, nextRecord.engine].join(' '),
